@@ -250,7 +250,7 @@
   // CONTACT FORM API SUBMISSION
   // ============================================
 
-  async function submitContactQuery(name, query, form, submitBtn) {
+  async function submitContactQuery(email, query, form, submitBtn) {
     const originalText = submitBtn ? (submitBtn.querySelector('.framer-text, p')?.textContent || submitBtn.textContent || 'Submit') : 'Submit';
     const textEl = submitBtn ? submitBtn.querySelector('.framer-text, p') : null;
     
@@ -262,14 +262,14 @@
 
     const apiUrl = config.contactApiEndpoint;
     log('Calling Contact API:', apiUrl);
-    log('Payload:', { name, query });
+    log('Payload:', { email, query });
 
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: name,
+          email: email,
           query: query,
         }),
       });
@@ -378,6 +378,40 @@
     });
   }
 
+  // Show inline error message near form
+  function showFormError(form, message, type) {
+    // Remove any existing error message
+    const existingError = form.querySelector('.contact-form-message');
+    if (existingError) existingError.remove();
+    
+    // Create wrapper div to match form layout
+    const wrapperDiv = document.createElement('div');
+    wrapperDiv.className = 'contact-form-message';
+    wrapperDiv.style.cssText = 'width:100%;display:flex;justify-content:center;margin-top:10px;';
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.textContent = message;
+    errorDiv.style.cssText = type === 'success' 
+      ? 'background-color:rgb(46,73,52);color:#fff;padding:14px 16px;border-radius:10px;font-family:"Neue Montreal Regular",Helvetica,Arial,sans-serif;font-size:14px;text-align:center;width:100%;max-width:280px;box-sizing:border-box;'
+      : 'background-color:rgb(185,28,28);color:#fff;padding:14px 16px;border-radius:10px;font-family:"Neue Montreal Regular",Helvetica,Arial,sans-serif;font-size:14px;text-align:center;width:100%;max-width:280px;box-sizing:border-box;';
+    
+    wrapperDiv.appendChild(errorDiv);
+    
+    // Insert after the label (before submit button containers)
+    const label = form.querySelector('label.framer-17k2brp');
+    if (label) {
+      label.insertAdjacentElement('afterend', wrapperDiv);
+    } else {
+      form.prepend(wrapperDiv);
+    }
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+      if (wrapperDiv.parentNode) wrapperDiv.remove();
+    }, 5000);
+  }
+
   function handleContactFormSubmit(e) {
     log('Contact form submit triggered');
     e.preventDefault();
@@ -385,30 +419,41 @@
     
     const form = e.target;
     
-    // Find name and query inputs - the form uses "Email" as name attribute for both
-    // First input is Name, second is the query/message
-    const inputs = form.querySelectorAll('input.framer-form-input');
-    const nameInput = inputs[0]; // First input is Name
-    const queryInput = inputs[1]; // Second input is Query (it's actually a text input styled as textarea)
+    // Find email input and query textarea
+    // First is email input, second is textarea for query
+    const emailInput = form.querySelector('input[type="email"].framer-form-input, input.framer-form-input');
+    const queryInput = form.querySelector('textarea.framer-form-input');
     const submitBtn = form.querySelector('button[type="submit"]');
+    
+    log('Email input found:', !!emailInput);
+    log('Query textarea found:', !!queryInput);
 
-    const name = nameInput ? nameInput.value.trim() : '';
+    const email = emailInput ? emailInput.value.trim() : '';
     const query = queryInput ? queryInput.value.trim() : '';
     
-    log('Contact Form data - Name:', name, 'Query:', query);
+    log('Contact Form data - Email:', email, 'Query:', query);
 
-    // Validation: Name is required
-    if (!name) {
-      log('Name validation failed - empty');
-      showToast('Name is required', 'error');
-      if (nameInput) nameInput.focus();
+    // Validation: Email is required
+    if (!email) {
+      log('Email validation failed - empty');
+      showFormError(form, 'Email is required', 'error');
+      if (emailInput) emailInput.focus();
+      return;
+    }
+
+    // Validation: Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      log('Email validation failed - invalid format');
+      showFormError(form, 'Please enter a valid email address', 'error');
+      if (emailInput) emailInput.focus();
       return;
     }
 
     // Validation: Query is required
     if (!query) {
       log('Query validation failed - empty');
-      showToast('Please enter your query', 'error');
+      showFormError(form, 'Please enter your query', 'error');
       if (queryInput) queryInput.focus();
       return;
     }
@@ -417,19 +462,19 @@
     const wordCount = query.split(/\s+/).filter(word => word.length > 0).length;
     if (wordCount > 200) {
       log('Query validation failed - too many words:', wordCount);
-      showToast(`Query exceeds 200 words limit. Current: ${wordCount} words`, 'error');
+      showFormError(form, `Query exceeds 200 words limit. Current: ${wordCount} words`, 'error');
       if (queryInput) queryInput.focus();
       return;
     }
 
     log('Submitting contact query to API...');
-    submitContactQuery(name, query, form, submitBtn).then(result => {
+    submitContactQuery(email, query, form, submitBtn).then(result => {
       log('Contact API Response:', result);
-      showToast(result.message, result.success ? 'success' : 'error');
+      showFormError(form, result.message, result.success ? 'success' : 'error');
       if (result.success) {
         form.reset();
         // Clear the input fields explicitly
-        if (nameInput) nameInput.value = '';
+        if (emailInput) emailInput.value = '';
         if (queryInput) queryInput.value = '';
       }
     });

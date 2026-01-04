@@ -21,12 +21,21 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { name, query } = body
+    const { email, query } = body
 
-    // Validate name
-    if (!name || typeof name !== 'string' || name.trim() === '') {
+    // Validate email
+    if (!email || typeof email !== 'string' || email.trim() === '') {
       return NextResponse.json(
-        { error: 'Name is required' },
+        { error: 'Email is required' },
+        { status: 400 }
+      )
+    }
+
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email.trim())) {
+      return NextResponse.json(
+        { error: 'Please enter a valid email address' },
         { status: 400 }
       )
     }
@@ -54,7 +63,7 @@ export async function POST(request: Request) {
     const { data, error } = await supabase
       .from('contact_queries')
       .insert({
-        name: name.trim(),
+        email: email.toLowerCase().trim(),
         query: query.trim(),
         status: 'pending',
       })

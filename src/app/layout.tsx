@@ -13,8 +13,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Plint - Join the Waitlist",
-  description: "Join the Plint waitlist and be among the first to experience our AI automation platform when we launch.",
+  title: "Plint AI: Modern Interior Design Solutions",
+  description: "Design stunning, production-ready outputs just from your plans, elevations and inputs. Plint AI transforms slow, manual 3D workflows into a fast, scalable design engine",
+  icons: {
+    icon: 'https://framerusercontent.com/images/JOv5mUsHRzjf9n9MRnsW4EUjp4.png',
+    apple: 'https://framerusercontent.com/images/JOv5mUsHRzjf9n9MRnsW4EUjp4.png',
+  },
 };
 
 export default function RootLayout({

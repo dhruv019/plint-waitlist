@@ -1,0 +1,275 @@
+/**
+ * Plint Waitlist Integration Styles
+ * 
+ * Include this CSS file in your HTML:
+ *   <link rel="stylesheet" href="./waitlist-integration.css">
+ */
+
+/* ============================================
+   MODAL STYLES
+   ============================================ */
+
+.waitlist-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.waitlist-modal.active {
+  display: flex;
+}
+
+.waitlist-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 20px;
+  display: flex;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: waitlistModalSlideIn 0.3s ease-out;
+}
+
+@keyframes waitlistModalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Image Section */
+.waitlist-modal-image {
+  flex: 1;
+  display: none;
+  background-color: rgb(244, 243, 238);
+  min-height: 500px;
+}
+
+@media (min-width: 768px) {
+  .waitlist-modal-image {
+    display: block;
+  }
+}
+
+.waitlist-modal-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 58.2% 49.9%;
+}
+
+/* Form Section */
+.waitlist-modal-form-container {
+  flex: 1;
+  background-color: rgb(255, 255, 255);
+  padding: 48px 40px;
+  position: relative;
+  min-width: 320px;
+}
+
+/* Close Button */
+.waitlist-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.waitlist-modal-close:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.waitlist-modal-close svg path {
+  transition: fill 0.2s;
+}
+
+.waitlist-modal-close:hover svg path {
+  fill: rgb(60, 60, 60);
+}
+
+/* Typography */
+.waitlist-modal-title {
+  font-family: 'Neue Montreal Medium', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 32px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin: 0 0 16px 0;
+  color: rgb(0, 0, 0);
+}
+
+.waitlist-modal-description {
+  font-family: 'Neue Montreal Medium', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgb(94, 94, 94);
+  margin: 0 0 32px 0;
+}
+
+/* Form */
+.waitlist-modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.waitlist-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.waitlist-form-group label {
+  font-family: 'Neue Montreal Medium', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgb(136, 136, 136);
+}
+
+.waitlist-form-group input {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid rgba(136, 136, 136, 0.1);
+  border-radius: 10px;
+  background: rgba(187, 187, 187, 0.15);
+  font-family: 'Neue Montreal Regular', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: rgb(60, 62, 60);
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.waitlist-form-group input::placeholder {
+  color: rgb(153, 153, 153);
+}
+
+.waitlist-form-group input:focus {
+  outline: none;
+  border-color: rgb(46, 73, 52);
+  box-shadow: 0 0 0 3px rgba(46, 73, 52, 0.1);
+}
+
+/* Submit Button */
+.waitlist-submit-btn {
+  width: 100%;
+  padding: 14px;
+  background-color: rgb(46, 73, 52);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-family: 'Neue Montreal Regular', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.waitlist-submit-btn:hover {
+  opacity: 0.9;
+}
+
+.waitlist-submit-btn:active {
+  transform: scale(0.98);
+}
+
+.waitlist-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Message */
+.waitlist-message {
+  padding: 12px;
+  border-radius: 8px;
+  font-family: 'Neue Montreal Regular', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  text-align: center;
+}
+
+.waitlist-message.success {
+  background-color: rgba(46, 73, 52, 0.1);
+  color: rgb(46, 73, 52);
+}
+
+.waitlist-message.error {
+  background-color: rgba(220, 38, 38, 0.1);
+  color: rgb(220, 38, 38);
+}
+
+/* ============================================
+   TOAST NOTIFICATION
+   ============================================ */
+
+.waitlist-toast {
+  display: none;
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 16px 24px;
+  border-radius: 10px;
+  font-family: 'Neue Montreal Regular', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.waitlist-toast.active {
+  display: block;
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.waitlist-toast.success {
+  background-color: rgb(46, 73, 52);
+  color: white;
+}
+
+.waitlist-toast.error {
+  background-color: rgb(220, 38, 38);
+  color: white;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+
+@media (max-width: 767px) {
+  .waitlist-modal-content {
+    margin: 10px;
+    max-width: calc(100% - 20px);
+  }
+
+  .waitlist-modal-form-container {
+    padding: 32px 24px;
+  }
+
+  .waitlist-modal-title {
+    font-size: 24px;
+  }
+
+  .waitlist-modal-description {
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+}
+

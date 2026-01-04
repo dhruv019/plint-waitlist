@@ -21,57 +21,41 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { email, full_name, referral_source } = body
+    const { name, query } = body
 
-    // Validate email
-    if (!email || typeof email !== 'string') {
+    // Validate name
+    if (!name || typeof name !== 'string' || name.trim() === '') {
       return NextResponse.json(
-        { error: 'Email is required' },
+        { error: 'Name is required' },
         { status: 400 }
       )
     }
 
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    // Validate query
+    if (!query || typeof query !== 'string' || query.trim() === '') {
       return NextResponse.json(
-        { error: 'Invalid email format' },
+        { error: 'Query is required' },
+        { status: 400 }
+      )
+    }
+
+    // Validate query word count (max 200 words)
+    const wordCount = query.trim().split(/\s+/).length
+    if (wordCount > 200) {
+      return NextResponse.json(
+        { error: `Query exceeds 200 words limit. Current: ${wordCount} words` },
         { status: 400 }
       )
     }
 
     const supabase = await createClient()
 
-    // Check if email already exists
-    const { data: existing, error: checkError } = await supabase
-      .from('waitlist')
-      .select('email')
-      .eq('email', email.toLowerCase().trim())
-      .single()
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      // PGRST116 is "not found" which is expected for new emails
-      console.error('Supabase check error:', checkError)
-      return NextResponse.json(
-        { error: 'Failed to check waitlist. Please try again.' },
-        { status: 500 }
-      )
-    }
-
-    if (existing) {
-      return NextResponse.json(
-        { error: 'This email is already on the waitlist' },
-        { status: 409 }
-      )
-    }
-
-    // Insert into waitlist
+    // Insert into contact_queries table
     const { data, error } = await supabase
-      .from('waitlist')
+      .from('contact_queries')
       .insert({
-        email: email.toLowerCase().trim(),
-        full_name: full_name || null,
-        referral_source: referral_source || null,
+        name: name.trim(),
+        query: query.trim(),
         status: 'pending',
       })
       .select()
@@ -80,7 +64,7 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Supabase insert error:', error)
       return NextResponse.json(
-        { error: 'Failed to add to waitlist. Please try again.' },
+        { error: 'Failed to submit query. Please try again.' },
         { status: 500 }
       )
     }
@@ -88,13 +72,13 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { 
         success: true, 
-        message: 'Successfully joined the waitlist!',
+        message: 'Your query has been submitted successfully!',
         data 
       },
       { status: 201 }
     )
   } catch (error) {
-    console.error('Waitlist API error:', error)
+    console.error('Contact API error:', error)
     return NextResponse.json(
       { error: 'Something went wrong. Please try again later.' },
       { status: 500 }

@@ -21,10 +21,14 @@
 
 (function() {
   'use strict';
+  
+  // Immediate debug output
+  console.log('[Waitlist] Script loaded!');
 
   // Default configuration
   const DEFAULT_CONFIG = {
     apiEndpoint: '/api/waitlist',
+    contactApiEndpoint: '/api/contact',
     // Selectors for buttons that should open the modal
     buttonSelectors: [
       '#1cv54m',           // Hero section button
@@ -36,6 +40,10 @@
     formSelectors: [
       'form.framer-a2xppx'
     ],
+    // Selectors for contact/query forms
+    contactFormSelectors: [
+      'form.framer-exiu6h'
+    ],
     // Regex to match button text for auto-detection
     buttonTextMatch: /get\s*access/i,
     // Links that should open modal instead of navigating
@@ -43,7 +51,7 @@
       /join-waitlist/i,
       /\/waitlist$/i
     ],
-    debug: false  // Set to true for debugging
+    debug: true  // Set to true for debugging
   };
 
   // Merge user config with defaults
@@ -239,6 +247,57 @@
   }
 
   // ============================================
+  // CONTACT FORM API SUBMISSION
+  // ============================================
+
+  async function submitContactQuery(name, query, form, submitBtn) {
+    const originalText = submitBtn ? (submitBtn.querySelector('.framer-text, p')?.textContent || submitBtn.textContent || 'Submit') : 'Submit';
+    const textEl = submitBtn ? submitBtn.querySelector('.framer-text, p') : null;
+    
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      if (textEl) textEl.textContent = 'Submitting...';
+      else submitBtn.textContent = 'Submitting...';
+    }
+
+    const apiUrl = config.contactApiEndpoint;
+    log('Calling Contact API:', apiUrl);
+    log('Payload:', { name, query });
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          query: query,
+        }),
+      });
+
+      log('Response status:', response.status);
+      const data = await response.json();
+      log('Response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit query');
+      }
+
+      log('Successfully submitted contact query');
+      return { success: true, message: data.message || 'Your query has been submitted successfully!' };
+    } catch (error) {
+      log('Submission error:', error.message);
+      log('Full error:', error);
+      return { success: false, message: error.message || 'Something went wrong. Please try again.' };
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        if (textEl) textEl.textContent = originalText;
+        else submitBtn.textContent = originalText;
+      }
+    }
+  }
+
+  // ============================================
   // EVENT HANDLERS
   // ============================================
 
@@ -316,6 +375,63 @@
       if (result.success) form.reset();
       if (textEl) textEl.textContent = originalText;
       if (submitBtn) submitBtn.disabled = false;
+    });
+  }
+
+  function handleContactFormSubmit(e) {
+    log('Contact form submit triggered');
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const form = e.target;
+    
+    // Find name and query inputs - the form uses "Email" as name attribute for both
+    // First input is Name, second is the query/message
+    const inputs = form.querySelectorAll('input.framer-form-input');
+    const nameInput = inputs[0]; // First input is Name
+    const queryInput = inputs[1]; // Second input is Query (it's actually a text input styled as textarea)
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    const name = nameInput ? nameInput.value.trim() : '';
+    const query = queryInput ? queryInput.value.trim() : '';
+    
+    log('Contact Form data - Name:', name, 'Query:', query);
+
+    // Validation: Name is required
+    if (!name) {
+      log('Name validation failed - empty');
+      showToast('Name is required', 'error');
+      if (nameInput) nameInput.focus();
+      return;
+    }
+
+    // Validation: Query is required
+    if (!query) {
+      log('Query validation failed - empty');
+      showToast('Please enter your query', 'error');
+      if (queryInput) queryInput.focus();
+      return;
+    }
+
+    // Validation: Query max 200 words
+    const wordCount = query.split(/\s+/).filter(word => word.length > 0).length;
+    if (wordCount > 200) {
+      log('Query validation failed - too many words:', wordCount);
+      showToast(`Query exceeds 200 words limit. Current: ${wordCount} words`, 'error');
+      if (queryInput) queryInput.focus();
+      return;
+    }
+
+    log('Submitting contact query to API...');
+    submitContactQuery(name, query, form, submitBtn).then(result => {
+      log('Contact API Response:', result);
+      showToast(result.message, result.success ? 'success' : 'error');
+      if (result.success) {
+        form.reset();
+        // Clear the input fields explicitly
+        if (nameInput) nameInput.value = '';
+        if (queryInput) queryInput.value = '';
+      }
     });
   }
 
@@ -449,6 +565,68 @@
     });
   }
 
+  function bindContactFormEvents() {
+    log('Binding contact form events...');
+    log('Looking for contact forms with selectors:', config.contactFormSelectors);
+    
+    // Use document-level event capturing to intercept clicks BEFORE Framer
+    document.addEventListener('click', function(e) {
+      const target = e.target;
+      
+      // Check if clicked on a submit button inside contact form
+      // Use closest() to find if click was on button or any child element
+      const clickedButton = target.closest('button[type="submit"]');
+      if (clickedButton) {
+        // Check if this button is inside a contact form
+        config.contactFormSelectors.forEach(selector => {
+          const forms = document.querySelectorAll(selector);
+          forms.forEach(form => {
+            if (form.contains(clickedButton)) {
+              log('Contact form submit button clicked via document handler!');
+              log('Target element:', target.tagName, target.className);
+              log('Button found:', clickedButton);
+              log('Form found:', form);
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              handleContactFormSubmit({ preventDefault: () => {}, stopPropagation: () => {}, target: form });
+              return;
+            }
+          });
+        });
+      }
+    }, true); // TRUE = capture phase (runs before Framer's handlers)
+    
+    // Also bind form submit event for keyboard submissions
+    config.contactFormSelectors.forEach(selector => {
+      const forms = document.querySelectorAll(selector);
+      log('Found', forms.length, 'contact forms for selector:', selector);
+      
+      forms.forEach((form, index) => {
+        if (!form._contactBound) {
+          form.addEventListener('submit', handleContactFormSubmit, true);
+          form._contactBound = true;
+          log('Bound contact form #' + index + ':', selector);
+        }
+      });
+    });
+    
+    log('Contact form document-level click handler installed');
+    
+    // Immediate debug: log found forms
+    config.contactFormSelectors.forEach(selector => {
+      const forms = document.querySelectorAll(selector);
+      console.log('[Waitlist] Contact forms found for selector "' + selector + '":', forms.length);
+      forms.forEach((form, i) => {
+        console.log('[Waitlist] Form #' + i + ':', form);
+        const inputs = form.querySelectorAll('input.framer-form-input');
+        console.log('[Waitlist] Inputs found in form:', inputs.length);
+        const btns = form.querySelectorAll('button[type="submit"]');
+        console.log('[Waitlist] Submit buttons found in form:', btns.length);
+      });
+    });
+  }
+
   function bindModalEvents() {
     const modal = document.getElementById('waitlist-modal');
     if (!modal) {
@@ -578,6 +756,7 @@
     bindModalEvents();
     bindButtonEvents();
     bindFormEvents();
+    bindContactFormEvents();
 
     // Expose global functions for manual triggering
     window.PlintWaitlist = {
@@ -587,6 +766,7 @@
       rebind: () => {
         bindButtonEvents();
         bindFormEvents();
+        bindContactFormEvents();
       }
     };
 
